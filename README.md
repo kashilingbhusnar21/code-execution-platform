@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Code Execution Platform
 
 A scalable, LeetCode-style **code execution platform** where users write code in the browser, run it securely inside Docker sandboxes, persist source files in **AWS S3**, and track submission history in **MySQL**.
@@ -364,3 +365,6 @@ This project is intended for learning and portfolio use. Add a license file (e.g
 ---
 
 **Happy coding!**
+=======
+# code-execution-platform
+>>>>>>> c7297ba3a2273f5a64978e514b1e076e5ea8c30e
