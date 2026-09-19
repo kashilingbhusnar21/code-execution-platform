@@ -12,7 +12,7 @@ public class Submission {
     private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private String userId;
+    private Long userId;
 
     @Column(name = "language", nullable = false)
     private String language;
@@ -42,7 +42,7 @@ public class Submission {
     public Submission() {
     }
 
-    public Submission(String userId, String language, String s3Key, String output, SubmissionStatus status, Long executionTime) {
+    public Submission(Long userId, String language, String s3Key, String output, SubmissionStatus status, Long executionTime) {
         this.userId = userId;
         this.language = language;
         this.s3Key = s3Key;
@@ -60,11 +60,11 @@ public class Submission {
         this.id = id;
     }
 
-    public String getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
