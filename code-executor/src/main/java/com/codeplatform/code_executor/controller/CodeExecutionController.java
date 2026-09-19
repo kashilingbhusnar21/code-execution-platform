@@ -5,6 +5,7 @@ import com.codeplatform.code_executor.dto.RunResponse;
 import com.codeplatform.code_executor.entity.Submission;
 import com.codeplatform.code_executor.model.CodeRequest;
 import com.codeplatform.code_executor.service.CodeExecutionService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +25,11 @@ public class CodeExecutionController {
     private CodeExecutionService codeExecutionService;
 
     @PostMapping("/run")
-    public ResponseEntity<RunResponse> executeCode(@RequestBody CodeRequest request) {
+    public ResponseEntity<RunResponse> executeCode(@RequestBody CodeRequest request, HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+
         logger.info("Received code execution request: language={}, userId={}",
-                request.getLanguage(), request.getUserId());
+                request.getLanguage(), userId);
 
         if (request.getCode() == null || request.getCode().isEmpty()) {
             return ResponseEntity.badRequest().body(RunResponse.error("Error: code is required"));
@@ -36,14 +39,14 @@ public class CodeExecutionController {
             return ResponseEntity.badRequest().body(RunResponse.error("Error: language is required"));
         }
 
-        if (request.getUserId() == null || request.getUserId().isEmpty()) {
+        if (userId == null) {
             return ResponseEntity.badRequest().body(RunResponse.error("Error: userId is required"));
         }
 
         RunResponse response = codeExecutionService.executeCode(
                 request.getCode(),
                 request.getLanguage(),
-                request.getUserId(),
+                userId,
                 request.getInput()
         );
 
@@ -55,11 +58,18 @@ public class CodeExecutionController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/history/{userId}")
-    public ResponseEntity<List<CodeResponse>> getHistory(@PathVariable String userId) {
-        logger.info("Received history request for userId: {}", userId);
+    @GetMapping("/history")
+    public ResponseEntity<List<CodeResponse>> getHistory(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        logger.info("Received history request - userId from JWT: {}", userId);
+
+        if (userId == null) {
+            logger.error("userId is null - JWT filter may not be working");
+            return ResponseEntity.badRequest().build();
+        }
 
         List<Submission> submissions = codeExecutionService.getHistoryByUserId(userId);
+        logger.info("Found {} submissions for userId: {}", submissions.size(), userId);
 
         List<CodeResponse> responses = submissions.stream()
                 .map(sub -> new CodeResponse(
@@ -76,11 +86,12 @@ public class CodeExecutionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<String> getCodeById(@PathVariable Long id) {
-        logger.info("Received code retrieval request for id: {}", id);
+    public ResponseEntity<String> getCodeById(@PathVariable Long id, HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        logger.info("Received code retrieval request for id: {}, userId: {}", id, userId);
 
         try {
-            String code = codeExecutionService.getCodeById(id);
+            String code = codeExecutionService.getCodeById(id, userId);
             return ResponseEntity.ok(code);
         } catch (Exception e) {
             logger.error("Error retrieving code: {}", e.getMessage());

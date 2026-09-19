@@ -38,7 +38,7 @@ public class CodeExecutionService {
     @Autowired
     private ContainerManagerService containerManager;
 
-    public RunResponse executeCode(String code, String language, String userId, String input) {
+    public RunResponse executeCode(String code, String language, Long userId, String input) {
         logger.info("Executing code: language={}, userId={}", language, userId);
 
         Optional<CodeExecutor> executorOpt = executorRegistry.find(language);
@@ -72,7 +72,7 @@ public class CodeExecutionService {
             Files.write(Paths.get(filePath), code.getBytes(StandardCharsets.UTF_8));
             logger.info("Code saved to temp file: {}", filePath);
 
-            s3Key = s3Service.uploadFile(filePath, userId, fileName);
+            s3Key = s3Service.uploadFile(filePath, String.valueOf(userId), fileName);
             logger.info("File uploaded to S3 with key: {}", s3Key);
 
             CodeExecutor.ExecutionResult result = executor.execute(code, filePath, input);
@@ -113,16 +113,22 @@ public class CodeExecutionService {
         }
     }
 
-    public List<Submission> getHistoryByUserId(String userId) {
+    public List<Submission> getHistoryByUserId(Long userId) {
         logger.info("Fetching history for userId: {}", userId);
-        return submissionRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        List<Submission> submissions = submissionRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        logger.info("Repository returned {} submissions for userId: {}", submissions.size(), userId);
+        
+        // Log each submission's userId for debugging
+        submissions.forEach(sub -> logger.info("Submission id={}, userId={}", sub.getId(), sub.getUserId()));
+        
+        return submissions;
     }
 
-    public String getCodeById(Long id) throws IOException {
-        logger.info("Fetching code for submission id: {}", id);
+    public String getCodeById(Long id, Long userId) throws IOException {
+        logger.info("Fetching code for submission id: {}, userId: {}", id, userId);
 
-        Submission submission = submissionRepository.findById(id)
-                .orElseThrow(() -> new IOException("Submission not found with id: " + id));
+        Submission submission = submissionRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new IOException("Submission not found or access denied"));
 
         if (submission.getS3Key() != null) {
             String downloadedPath = s3Service.downloadFile(submission.getS3Key());

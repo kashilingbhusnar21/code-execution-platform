@@ -5,7 +5,6 @@ public class CodeRequest {
     private String code;
     private String language;
     private String input;
-    private String userId;
     private String fileName;
 
     public CodeRequest() {
@@ -34,14 +33,6 @@ public class CodeRequest {
 
     public void setInput(String input) {
         this.input = input;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
     }
 
     public String getFileName() {
