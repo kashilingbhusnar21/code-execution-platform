@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 # Code Execution Platform
 
-A scalable, LeetCode-style **code execution platform** where users write code in the browser, run it securely inside Docker sandboxes, persist source files in **AWS S3**, and track submission history in **MySQL**.
+A scalable, LeetCode-style **code execution platform** where users write code in the browser, run it securely inside Docker sandboxes, persist source files in **AWS S3**, track submission history in **MySQL**, and process code asynchronously using **RabbitMQ**.
 
 Built with **React + Monaco Editor** on the frontend and **Spring Boot** on the backend.
 
@@ -32,11 +31,13 @@ Built with **React + Monaco Editor** on the frontend and **Spring Boot** on the 
 - **Docker-based isolated execution** — warm containers with `docker exec` for fast runs
 - **AWS S3** — durable storage for submitted source files
 - **MySQL** — metadata, status, output snippets, and execution time
+- **RabbitMQ** — asynchronous message queue for scalable code execution
 - **Monaco Editor** — VS Code–like editing with syntax highlighting
 - **Execution history** — browse past submissions and reload code into the editor
 - **stdin support** — pass custom input to programs
-- **Status classification** — `SUCCESS`, `COMPILATION_ERROR`, `RUNTIME_ERROR`, `TIMEOUT`
+- **Status classification** — `SUCCESS`, `COMPILATION_ERROR`, `RUNTIME_ERROR`, `TIMEOUT`, `PENDING`
 - **Hardened sandbox** — CPU, memory, PID, and network limits
+- **Async processing** — submissions queued and processed in background with polling
 
 ---
 
@@ -60,17 +61,27 @@ Built with **React + Monaco Editor** on the frontend and **Spring Boot** on the 
 │  Store source │  │  Warm language  │  │  Submission meta:  │
 │  files        │  │  containers     │  │  status, time, out │
 └───────────────┘  └─────────────────┘  └────────────────────┘
+        │                   │                   │
+        └───────────────────┴───────────────────┘
+                            │
+                            ▼
+                  ┌─────────────────┐
+                  │  RabbitMQ       │
+                  │  Message Queue  │
+                  └─────────────────┘
 ```
 
-### Request flow
+### Request flow (Async with RabbitMQ)
 
 1. **Frontend** sends `code`, `language`, `input`, and `userId` to the API.
-2. **CodeExecutionService** writes a unique temp file under `C:\temp\{userId}_{timestamp}\`.
-3. **S3Service** uploads the source file and stores the S3 key.
-4. **ContainerManagerService** ensures a warm container is running, then executors run via `docker exec`.
-5. Output and status are captured; **Submission** metadata is saved to MySQL.
-6. A structured response (`stdout` / `stderr` / `status` / `executionTimeMs`) is returned to the UI.
-7. Users can open **History**, fetch past code from S3, and reload it into Monaco.
+2. **Controller** creates a submission with `PENDING` status and saves to MySQL.
+3. **Producer** sends message to RabbitMQ `code.submission.queue`.
+4. **Controller returns immediately** with `submissionId` (async response).
+5. **Frontend polls** `/api/code/status/{id}` every 2 seconds for status updates.
+6. **Consumer** receives message from queue and executes code using Docker.
+7. **Result Consumer** receives execution result and updates MySQL with final status.
+8. **Frontend detects status change** from PENDING to SUCCESS/ERROR and updates UI.
+9. Users can open **History**, fetch past code from S3, and reload it into Monaco.
 
 ### Why this design?
 
@@ -79,6 +90,7 @@ Built with **React + Monaco Editor** on the frontend and **Spring Boot** on the 
 | **S3** | File storage | Source files can be large; object storage scales better than stuffing full code into SQL rows. S3 keeps durable blobs; the DB only stores the key. |
 | **MySQL** | Metadata & history | Fast queries for status, language, timestamps, and execution time. Ideal for listing history and dashboards. |
 | **Docker** | Isolation & security | Untrusted user code never runs on the host JVM. Containers get memory/CPU/PID caps and **no network**. |
+| **RabbitMQ** | Async processing | Decouples submission from execution, improves scalability, allows horizontal scaling of consumers. |
 
 ---
 
@@ -94,6 +106,7 @@ Built with **React + Monaco Editor** on the frontend and **Spring Boot** on the 
 - Java 17
 - REST APIs
 - Spring Data JPA
+- Spring AMQP (RabbitMQ)
 
 ### Execution
 - Docker Desktop
@@ -103,6 +116,7 @@ Built with **React + Monaco Editor** on the frontend and **Spring Boot** on the 
 ### Cloud & Data
 - AWS S3
 - MySQL
+- RabbitMQ
 
 ---
 
@@ -110,13 +124,15 @@ Built with **React + Monaco Editor** on the frontend and **Spring Boot** on the 
 
 1. User writes code in **Monaco Editor** and optionally provides stdin.
 2. Frontend calls `POST /api/code/run` with code, language, input, and userId.
-3. Backend creates a unique work folder and saves the source file (`Main.java` / `main.py` / `main.cpp`).
-4. File is uploaded to **AWS S3**; the S3 key is recorded.
-5. Code runs inside a **warm Docker container** for that language (`docker exec`).
-6. stdout / stderr / exit status / timeout are classified.
-7. Result metadata is stored in **MySQL**.
-8. JSON response is shown in the Output console (stdout white, stderr red).
-9. User can browse **History** and reload any past submission into the editor.
+3. Backend creates a submission with **PENDING** status and saves to MySQL.
+4. Backend sends message to **RabbitMQ** queue with code details.
+5. Backend returns **immediately** with `submissionId` (async pattern).
+6. Frontend shows **PENDING** status and starts polling for updates.
+7. **RabbitMQ Consumer** receives message and executes code in Docker container.
+8. Consumer sends result to result queue.
+9. **Result Consumer** updates MySQL with final status and output.
+10. Frontend polling detects completion and displays results.
+11. User can browse **History** and reload any past submission into the editor.
 
 ---
 
@@ -132,17 +148,22 @@ code-executor/                          # Monorepo root
 │   │   │   ├── OutputConsole.jsx       # stdout / stderr / timing
 │   │   │   └── HistoryPanel.jsx        # Submission list + reload
 │   │   └── services/
-│   │       └── api.js                  # Axios API client
+│   │       └── api.js                  # Axios API client with polling
 │   ├── package.json
 │   └── vite.config.js                  # Dev server + /api proxy → :8080
 │
 └── code-executor/                      # Spring Boot backend
     └── src/main/java/com/codeplatform/code_executor/
+        ├── config/                     # Configuration classes
+        │   └── RabbitMQConfig          # RabbitMQ queues, exchanges, bindings
         ├── controller/                 # REST controllers
         ├── service/                    # Business logic
         │   ├── CodeExecutionService
         │   ├── ContainerManagerService # Warm Docker containers
-        │   └── S3Service
+        │   ├── S3Service
+        │   ├── RabbitMQProducerService # Send messages to RabbitMQ
+        │   ├── RabbitMQConsumerService # Process code submissions
+        │   └── RabbitMQResultConsumerService # Update DB with results
         ├── executor/                   # Strategy pattern
         │   ├── CodeExecutor            # Interface
         │   ├── ExecutorRegistry
@@ -152,6 +173,9 @@ code-executor/                          # Monorepo root
         ├── entity/                     # JPA entities (Submission, …)
         ├── repository/                 # Spring Data repositories
         ├── dto/                        # API response models
+        │   ├── CodeSubmissionMessage    # RabbitMQ message for submissions
+        │   ├── CodeResultMessage        # RabbitMQ message for results
+        │   └── RunResponse             # API response with submissionId
         └── model/                      # Request models (CodeRequest)
 ```
 
@@ -166,6 +190,7 @@ code-executor/                          # Monorepo root
 - Node.js **18+** and npm
 - Docker Desktop (running)
 - MySQL **8+**
+- RabbitMQ (running on localhost:5672)
 - AWS account with an S3 bucket
 
 ### 1. Clone the repository
@@ -197,6 +222,14 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+# RabbitMQ
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+spring.rabbitmq.listener.simple.concurrency=3
+spring.rabbitmq.listener.simple.max-concurrency=10
 ```
 
 Create the database:
@@ -205,7 +238,24 @@ Create the database:
 CREATE DATABASE code_executor;
 ```
 
-### 3. Docker images
+### 3. RabbitMQ Installation
+
+Install RabbitMQ using one of these methods:
+
+**Option 1: Docker**
+```bash
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
+
+**Option 2: Windows Installer**
+Download from https://www.rabbitmq.com/download.html
+
+**Option 3: Chocolatey**
+```bash
+choco install rabbitmq
+```
+
+### 4. Docker images
 
 Install **Docker Desktop**, then pull images:
 
@@ -223,7 +273,7 @@ On first backend startup, warm containers are created automatically:
 - `python-container`
 - `cpp-container`
 
-### 4. Frontend dependencies
+### 5. Frontend dependencies
 
 ```bash
 cd frontend
@@ -258,7 +308,7 @@ Open: [http://localhost:3000](http://localhost:3000)
 
 ### `POST /api/code/run`
 
-Execute code.
+Execute code asynchronously.
 
 **Request body:**
 
@@ -271,15 +321,14 @@ Execute code.
 }
 ```
 
-**Response (example):**
+**Response (immediate):**
 
 ```json
 {
-  "output": "Hi",
-  "stdout": "Hi",
-  "stderr": "",
-  "status": "SUCCESS",
-  "executionTimeMs": 420
+  "output": "Submission queued for execution. Use the submission ID to check status.",
+  "status": "PENDING",
+  "executionTimeMs": 0,
+  "submissionId": 50
 }
 ```
 
@@ -287,9 +336,28 @@ Supported `language` values: `java`, `python`, `cpp`.
 
 ---
 
-### `GET /api/code/history/{userId}`
+### `GET /api/code/status/{id}`
 
-List submission history for a user (newest first).
+Check submission status (for polling).
+
+**Response (when complete):**
+
+```json
+{
+  "id": 50,
+  "language": "java",
+  "output": "Hi",
+  "status": "SUCCESS",
+  "createdAt": "2024-09-20T10:30:00",
+  "executionTime": 420
+}
+```
+
+---
+
+### `GET /api/code/history`
+
+List submission history for authenticated user (newest first).
 
 ---
 
@@ -311,6 +379,7 @@ Fetch the source code for a submission (downloaded from S3 using the stored key)
 | **Timeouts** | Long-running processes are killed after a configured timeout |
 | **Ephemeral workdirs** | Unique `C:\temp\{user}_{ts}` folders deleted after each run |
 | **Warm containers** | Long-lived sandboxes; only temp files are cleaned, not the host |
+| **Async processing** | RabbitMQ decouples submission from execution, improving scalability |
 
 ---
 
@@ -325,7 +394,7 @@ Fetch the source code for a submission (downloaded from S3 using the stored key)
 Suggested shots:
 
 1. Monaco editor with language dropdown (Java / Python / C++)
-2. Output console showing stdout / stderr and execution time
+2. Output console showing PENDING status and then SUCCESS with execution time
 3. History panel with reload into editor
 
 ---
@@ -333,12 +402,14 @@ Suggested shots:
 ## Future Improvements
 
 - [x] **Container reuse** — warm containers + `docker exec` (already implemented)
+- [x] **Async processing** — RabbitMQ for scalable code execution (already implemented)
 - [ ] More languages (JavaScript, Go, Rust, …)
 - [ ] Judge / problem system with hidden test cases
 - [ ] User authentication & multi-tenant isolation
 - [ ] Rate limiting and abuse protection
-- [ ] Deploy backend, frontend, and workers on AWS (ECS/EKS + RDS + S3)
-- [ ] Real-time streaming of stdout while code runs
+- [ ] Deploy backend, frontend, and workers on AWS (ECS/EKS + RDS + S3 + RabbitMQ)
+- [ ] Real-time streaming of stdout while code runs (WebSocket)
+- [ ] Webhook notifications for completion instead of polling
 
 ---
 
@@ -349,12 +420,15 @@ Suggested shots:
 - Applying the **Strategy pattern** for pluggable language executors
 - Building a full-stack flow: Monaco UI ↔ Spring REST ↔ Docker ↔ cloud storage
 - Optimizing latency with **warm containers** instead of cold `docker run` per request
+- Implementing **async processing** with RabbitMQ for scalability
+- Using **polling pattern** for frontend status updates
+- Designing **message-driven architecture** with producer-consumer pattern
 
 ---
 
 ## Resume Blurb
 
-> Built a scalable code execution platform using Spring Boot, Docker, and AWS S3 with multi-language support (Java, Python, C++) and secure sandboxed execution, including Monaco-based editing and submission history.
+> Built a scalable code execution platform using Spring Boot, Docker, AWS S3, and RabbitMQ with multi-language support (Java, Python, C++), secure sandboxed execution, and asynchronous message processing for improved scalability, including Monaco-based editing and submission history.
 
 ---
 
@@ -365,6 +439,3 @@ This project is intended for learning and portfolio use. Add a license file (e.g
 ---
 
 **Happy coding!**
-=======
-# code-execution-platform
->>>>>>> c7297ba3a2273f5a64978e514b1e076e5ea8c30e

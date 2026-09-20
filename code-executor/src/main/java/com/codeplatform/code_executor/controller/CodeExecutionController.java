@@ -1,10 +1,14 @@
 package com.codeplatform.code_executor.controller;
 
 import com.codeplatform.code_executor.dto.CodeResponse;
+import com.codeplatform.code_executor.dto.CodeSubmissionMessage;
 import com.codeplatform.code_executor.dto.RunResponse;
 import com.codeplatform.code_executor.entity.Submission;
+import com.codeplatform.code_executor.entity.SubmissionStatus;
 import com.codeplatform.code_executor.model.CodeRequest;
 import com.codeplatform.code_executor.service.CodeExecutionService;
+import com.codeplatform.code_executor.service.RabbitMQProducerService;
+import com.codeplatform.code_executor.repository.SubmissionRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +28,12 @@ public class CodeExecutionController {
 
     @Autowired
     private CodeExecutionService codeExecutionService;
+
+    @Autowired
+    private RabbitMQProducerService rabbitMQProducerService;
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
 
     @PostMapping("/run")
     public ResponseEntity<RunResponse> executeCode(@RequestBody CodeRequest request, HttpServletRequest httpRequest) {
@@ -43,17 +54,34 @@ public class CodeExecutionController {
             return ResponseEntity.badRequest().body(RunResponse.error("Error: userId is required"));
         }
 
-        RunResponse response = codeExecutionService.executeCode(
-                request.getCode(),
-                request.getLanguage(),
+        // Create submission record with PENDING status
+        Submission submission = new Submission(
                 userId,
-                request.getInput()
+                request.getLanguage().toLowerCase(),
+                "pending_" + userId + "_" + Instant.now().toEpochMilli(),
+                null,
+                SubmissionStatus.PENDING,
+                null
         );
+        submissionRepository.save(submission);
+        logger.info("Submission created with PENDING status: id={}", submission.getId());
 
-        if ("ERROR".equals(response.getStatus()) && response.getOutput() != null
-                && response.getOutput().startsWith("Error: Language")) {
-            return ResponseEntity.badRequest().body(response);
-        }
+        // Send to RabbitMQ for async processing
+        CodeSubmissionMessage message = new CodeSubmissionMessage(
+                submission.getId(),
+                request.getLanguage(),
+                request.getCode(),
+                request.getInput(),
+                userId
+        );
+        rabbitMQProducerService.sendCodeSubmission(message);
+
+        // Return immediate response with submission ID
+        RunResponse response = new RunResponse();
+        response.setOutput("Submission queued for execution. Use the submission ID to check status.");
+        response.setStatus("PENDING");
+        response.setExecutionTimeMs(0L);
+        response.setSubmissionId(submission.getId());
 
         return ResponseEntity.ok(response);
     }
@@ -97,5 +125,27 @@ public class CodeExecutionController {
             logger.error("Error retrieving code: {}", e.getMessage());
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/status/{id}")
+    public ResponseEntity<CodeResponse> getSubmissionStatus(@PathVariable Long id, HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        logger.info("Received status check request for id: {}, userId: {}", id, userId);
+
+        Submission submission = submissionRepository.findByIdAndUserId(id, userId).orElse(null);
+        if (submission == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        CodeResponse response = new CodeResponse(
+                submission.getId(),
+                submission.getLanguage(),
+                submission.getOutput(),
+                submission.getStatus().name(),
+                submission.getCreatedAt(),
+                submission.getExecutionTime()
+        );
+
+        return ResponseEntity.ok(response);
     }
 }

@@ -10,7 +10,7 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<Navigate to={localStorage.getItem('token') ? '/editor' : '/login'} replace />}
+          element={<Navigate to="/login" replace />}
         />
         <Route
           path="/login"
@@ -26,7 +26,7 @@ function App() {
         />
         <Route
           path="*"
-          element={<Navigate to={localStorage.getItem('token') ? '/editor' : '/login'} replace />}
+          element={<Navigate to="/login" replace />}
         />
       </Routes>
     </BrowserRouter>
