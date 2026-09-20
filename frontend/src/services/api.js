@@ -73,4 +73,9 @@ export const api = {
     const response = await axiosWithAuth.get(`${API_BASE_URL}/code/${id}`);
     return response.data;
   },
+
+  getSubmissionStatus: async (id) => {
+    const response = await axiosWithAuth.get(`${API_BASE_URL}/code/status/${id}`);
+    return response.data;
+  },
 };

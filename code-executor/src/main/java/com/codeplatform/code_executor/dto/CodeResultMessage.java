@@ -1,48 +1,37 @@
 package com.codeplatform.code_executor.dto;
 
-import com.codeplatform.code_executor.entity.SubmissionStatus;
+import java.io.Serializable;
 
-public class RunResponse {
+public class CodeResultMessage implements Serializable {
 
+    private Long submissionId;
     private String output;
     private String stdout;
     private String stderr;
     private String status;
     private Long executionTimeMs;
-    private Long submissionId;
+    private String errorMessage;
 
-    public RunResponse() {
+    public CodeResultMessage() {
     }
 
-    public RunResponse(String output, String stdout, String stderr, String status, Long executionTimeMs) {
+    public CodeResultMessage(Long submissionId, String output, String stdout, String stderr, 
+                            String status, Long executionTimeMs, String errorMessage) {
+        this.submissionId = submissionId;
         this.output = output;
         this.stdout = stdout;
         this.stderr = stderr;
         this.status = status;
         this.executionTimeMs = executionTimeMs;
+        this.errorMessage = errorMessage;
     }
 
-    public static RunResponse from(String output, SubmissionStatus status, long executionTimeMs) {
-        String stdout = "";
-        String stderr = "";
-
-        if (status == SubmissionStatus.SUCCESS) {
-            stdout = output == null ? "" : output;
-        } else {
-            stderr = output == null ? "" : output;
-        }
-
-        return new RunResponse(
-                output == null ? "" : output,
-                stdout,
-                stderr,
-                status == null ? "ERROR" : status.name(),
-                executionTimeMs
-        );
+    public Long getSubmissionId() {
+        return submissionId;
     }
 
-    public static RunResponse error(String message) {
-        return new RunResponse(message, "", message, "ERROR", 0L);
+    public void setSubmissionId(Long submissionId) {
+        this.submissionId = submissionId;
     }
 
     public String getOutput() {
@@ -85,11 +74,11 @@ public class RunResponse {
         this.executionTimeMs = executionTimeMs;
     }
 
-    public Long getSubmissionId() {
-        return submissionId;
+    public String getErrorMessage() {
+        return errorMessage;
     }
 
-    public void setSubmissionId(Long submissionId) {
-        this.submissionId = submissionId;
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 }

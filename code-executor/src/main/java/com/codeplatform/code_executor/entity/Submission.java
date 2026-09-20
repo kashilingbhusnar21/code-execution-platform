@@ -24,7 +24,7 @@ public class Submission {
     private String output;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, length = 20)
     private SubmissionStatus status;
 
     @Column(name = "execution_time")

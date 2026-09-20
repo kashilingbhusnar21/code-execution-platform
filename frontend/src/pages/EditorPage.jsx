@@ -11,6 +11,7 @@ const STATUS_META = {
   RUNTIME_ERROR: { label: 'Runtime Error', tone: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
   TIMEOUT: { label: 'Timeout', tone: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
   ERROR: { label: 'Error', tone: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+  PENDING: { label: 'Pending', tone: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
 };
 
 const LANGUAGE_LABELS = {
@@ -80,13 +81,47 @@ function EditorPage() {
     setIsRunning(true);
     setStdout('');
     setStderr('');
-    setStatus(null);
+    setStatus('PENDING');
     setExecutionTime(null);
 
     try {
       const result = await api.runCode(code, language, input);
-      applyResult(result);
-      historyRef.current?.refresh?.();
+      
+      // If backend returns submissionId, poll for status
+      if (result.submissionId) {
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResult = await api.getSubmissionStatus(result.submissionId);
+            
+            if (statusResult.status !== 'PENDING') {
+              clearInterval(pollInterval);
+              applyResult(statusResult);
+              historyRef.current?.refresh?.();
+            }
+          } catch (error) {
+            clearInterval(pollInterval);
+            const message = error.response?.data?.message || error.message || 'Error checking status';
+            setStdout('');
+            setStderr(message);
+            setStatus('ERROR');
+            setExecutionTime(0);
+          }
+        }, 2000); // Poll every 2 seconds
+
+        // Set a timeout to stop polling after 60 seconds
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          if (status === 'PENDING') {
+            setStderr('Execution timed out');
+            setStatus('TIMEOUT');
+            setExecutionTime(0);
+          }
+        }, 60000);
+      } else {
+        // Fallback for synchronous execution
+        applyResult(result);
+        historyRef.current?.refresh?.();
+      }
     } catch (error) {
       const data = error.response?.data;
       if (data && typeof data === 'object') {

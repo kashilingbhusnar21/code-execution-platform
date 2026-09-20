@@ -113,6 +113,54 @@ public class CodeExecutionService {
         }
     }
 
+    public RunResponse executeCodeOnly(String code, String language, Long userId, String input) {
+        logger.info("Executing code only (no DB save): language={}, userId={}", language, userId);
+
+        Optional<CodeExecutor> executorOpt = executorRegistry.find(language);
+        if (executorOpt.isEmpty()) {
+            logger.error("No executor found for language: {}. Supported: {}",
+                    language, executorRegistry.getSupportedLanguages());
+            return RunResponse.error(
+                    "Error: Language '" + language + "' is not supported. Supported: "
+                            + executorRegistry.getSupportedLanguages());
+        }
+
+        try {
+            containerManager.ensureContainerRunning(language);
+        } catch (Exception e) {
+            logger.error("Warm container unavailable for {}: {}", language, e.getMessage());
+            return RunResponse.error(
+                    "Error: execution environment for '" + language + "' is unavailable: " + e.getMessage());
+        }
+
+        CodeExecutor executor = executorOpt.get();
+        String timestamp = String.valueOf(Instant.now().toEpochMilli());
+        String uniqueFolder = userId + "_" + timestamp;
+        String fileName = executor.getSourceFileName();
+        String filePath = BASE_FOLDER.resolve(uniqueFolder).resolve(fileName).toString();
+        String s3Key = null;
+
+        try {
+            Path tempDir = BASE_FOLDER.resolve(uniqueFolder);
+            Files.createDirectories(tempDir);
+            Files.write(Paths.get(filePath), code.getBytes(StandardCharsets.UTF_8));
+            logger.info("Code saved to temp file: {}", filePath);
+
+            s3Key = s3Service.uploadFile(filePath, String.valueOf(userId), fileName);
+            logger.info("File uploaded to S3 with key: {}", s3Key);
+
+            CodeExecutor.ExecutionResult result = executor.execute(code, filePath, input);
+            logger.info("Code execution completed: status={}, time={}ms",
+                    result.getStatus(), result.getExecutionTimeMs());
+
+            return RunResponse.from(result.getOutput(), result.getStatus(), result.getExecutionTimeMs());
+
+        } catch (IOException e) {
+            logger.error("IO error during code execution", e);
+            return RunResponse.from("Error executing code: " + e.getMessage(), SubmissionStatus.RUNTIME_ERROR, 0L);
+        }
+    }
+
     public List<Submission> getHistoryByUserId(Long userId) {
         logger.info("Fetching history for userId: {}", userId);
         List<Submission> submissions = submissionRepository.findByUserIdOrderByCreatedAtDesc(userId);
