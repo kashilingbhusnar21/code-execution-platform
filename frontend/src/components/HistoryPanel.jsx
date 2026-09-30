@@ -81,7 +81,7 @@ const HistoryPanel = forwardRef(({ onLoadCode }, ref) => {
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/20 backdrop-blur">
+    <section className="flex h-full flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/20 backdrop-blur">
       <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/70 px-4 py-3 sm:px-5">
         <div>
           <h2 className="text-sm font-semibold text-slate-100">History</h2>
@@ -103,7 +103,7 @@ const HistoryPanel = forwardRef(({ onLoadCode }, ref) => {
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-3 py-3 sm:px-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4">
         {loading && (
           <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-8 text-sm text-slate-400">
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">

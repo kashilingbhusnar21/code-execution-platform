@@ -46,26 +46,37 @@ public class S3Service {
 
     private S3Client getS3Client() {
         if (s3Client == null) {
-            s3Client = S3Client.builder()
-                    .region(Region.of(region))
-                    .credentialsProvider(StaticCredentialsProvider.create(
-                            AwsBasicCredentials.create(accessKey, secretKey)))
-                    .build();
+            if (accessKey != null && !accessKey.isEmpty() && secretKey != null && !secretKey.isEmpty()) {
+                s3Client = S3Client.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(accessKey, secretKey)))
+                        .build();
+            } else {
+                s3Client = S3Client.builder()
+                        .region(Region.of(region))
+                        .build();
+            }
         }
         return s3Client;
     }
 
     private S3Presigner getS3Presigner() {
         if (s3Presigner == null) {
-            s3Presigner = S3Presigner.builder()
-                    .region(Region.of(region))
-                    .credentialsProvider(StaticCredentialsProvider.create(
-                            AwsBasicCredentials.create(accessKey, secretKey)))
-                    .build();
+            if (accessKey != null && !accessKey.isEmpty() && secretKey != null && !secretKey.isEmpty()) {
+                s3Presigner = S3Presigner.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(accessKey, secretKey)))
+                        .build();
+            } else {
+                s3Presigner = S3Presigner.builder()
+                        .region(Region.of(region))
+                        .build();
+            }
         }
         return s3Presigner;
     }
-
     public String downloadFile(String fileName) throws IOException {
         logger.info("Downloading file from S3: bucket={}, key={}", bucketName, fileName);
 

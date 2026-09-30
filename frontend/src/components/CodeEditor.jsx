@@ -60,25 +60,8 @@ const CodeEditor = ({
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-400">
-            Write code, choose a language, and run against the current input.
+            Write code and run against the current input.
           </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="sr-only" htmlFor="language-select">
-            Language
-          </label>
-          <select
-            id="language-select"
-            value={language}
-            onChange={(e) => handleLanguageChange(e.target.value)}
-            className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none transition-all duration-200 hover:border-slate-600 focus:border-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isRunning}
-          >
-            <option value="java">Java</option>
-            <option value="python">Python</option>
-            <option value="cpp">C++</option>
-          </select>
         </div>
       </div>
 

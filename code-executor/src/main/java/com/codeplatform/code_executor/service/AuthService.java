@@ -36,7 +36,7 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(savedUser.getEmail(), savedUser.getId());
 
-        return new AuthResponse(token, savedUser.getId(), savedUser.getUsername(), savedUser.getEmail());
+        return new AuthResponse(token, savedUser.getId(), savedUser.getUsername(), savedUser.getEmail(), savedUser.getStreakCount());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -49,6 +49,19 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getId());
 
-        return new AuthResponse(token, user.getId(), user.getUsername(), user.getEmail());
+        return new AuthResponse(token, user.getId(), user.getUsername(), user.getEmail(), user.getStreakCount());
+    }
+
+    public AuthResponse getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return new AuthResponse(
+                null,
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getStreakCount()
+        );
     }
 }

@@ -54,6 +54,11 @@ export const api = {
 
   isAuthenticated: () => !!getToken(),
 
+  getUserInfo: async () => {
+    const response = await axiosWithAuth.get(`${AUTH_BASE_URL}/me`);
+    return response.data;
+  },
+
   // Code execution endpoints (protected)
   runCode: async (code, language, input) => {
     const response = await axiosWithAuth.post(`${API_BASE_URL}/code/run`, {

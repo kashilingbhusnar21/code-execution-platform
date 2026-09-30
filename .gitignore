@@ -25,6 +25,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+code-executor/src/main/resources/application.properties
 **/application-local.properties
 **/application-secret.properties
 **/secrets/

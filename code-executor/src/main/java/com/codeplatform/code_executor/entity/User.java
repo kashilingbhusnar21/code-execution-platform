@@ -3,6 +3,8 @@ package com.codeplatform.code_executor.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -20,4 +22,10 @@ public class User {
 
     @Column(name = "password", nullable = false)
     private String password;
+
+    @Column(name = "streak_count")
+    private Integer streakCount = 0;
+
+    @Column(name = "last_submission_date")
+    private LocalDate lastSubmissionDate;
 }

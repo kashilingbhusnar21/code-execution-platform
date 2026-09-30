@@ -33,6 +33,7 @@ function EditorPage() {
   const [executionTime, setExecutionTime] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [user, setUser] = useState(() => api.getUser());
+  const [streak, setStreak] = useState(0);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const historyRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -46,6 +47,18 @@ function EditorPage() {
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const userInfo = await api.getUserInfo();
+        setStreak(userInfo.streakCount || 0);
+      } catch (error) {
+        console.error('Failed to fetch user info:', error);
+      }
+    };
+    fetchUserInfo();
   }, []);
 
   const detectStatus = (text) => {
@@ -97,6 +110,9 @@ function EditorPage() {
               clearInterval(pollInterval);
               applyResult(statusResult);
               historyRef.current?.refresh?.();
+              // Refresh user info to get updated streak
+              const userInfo = await api.getUserInfo();
+              setStreak(userInfo.streakCount || 0);
             }
           } catch (error) {
             clearInterval(pollInterval);
@@ -191,6 +207,32 @@ function EditorPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/70 px-1.5 py-1.5">
+                {['java', 'python', 'cpp'].map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => {
+                      setLanguage(lang);
+                      setCode(LANGUAGE_TEMPLATES[lang] || '');
+                    }}
+                    disabled={isRunning}
+                    className={`relative px-4 py-1.5 text-sm font-medium transition-all duration-200 rounded-lg ${
+                      language === lang
+                        ? 'bg-gradient-to-r from-sky-500 to-cyan-400 text-slate-950 shadow-lg shadow-sky-500/20'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    } disabled:cursor-not-allowed disabled:opacity-50`}
+                  >
+                    {LANGUAGE_LABELS[lang] || lang}
+                  </button>
+                ))}
+              </div>
+
+              <div className="hidden items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-300 md:flex">
+                <span className="text-lg">🔥</span>
+                <span>{streak} day streak</span>
+              </div>
+
               <div className="hidden items-center gap-2 rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-300 md:flex">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 {isRunning ? 'Running' : 'Ready'}
