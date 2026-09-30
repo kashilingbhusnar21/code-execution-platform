@@ -4,8 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -29,12 +27,6 @@ public class S3Service {
     private static final Logger logger = LoggerFactory.getLogger(S3Service.class);
     private static final String TEMP_FOLDER = "C:\\temp";
 
-    @Value("${aws.accessKey}")
-    private String accessKey;
-
-    @Value("${aws.secretKey}")
-    private String secretKey;
-
     @Value("${aws.region}")
     private String region;
 
@@ -46,34 +38,18 @@ public class S3Service {
 
     private S3Client getS3Client() {
         if (s3Client == null) {
-            if (accessKey != null && !accessKey.isEmpty() && secretKey != null && !secretKey.isEmpty()) {
-                s3Client = S3Client.builder()
-                        .region(Region.of(region))
-                        .credentialsProvider(StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(accessKey, secretKey)))
-                        .build();
-            } else {
-                s3Client = S3Client.builder()
-                        .region(Region.of(region))
-                        .build();
-            }
+            s3Client = S3Client.builder()
+                    .region(Region.of(region))
+                    .build();
         }
         return s3Client;
     }
 
     private S3Presigner getS3Presigner() {
         if (s3Presigner == null) {
-            if (accessKey != null && !accessKey.isEmpty() && secretKey != null && !secretKey.isEmpty()) {
-                s3Presigner = S3Presigner.builder()
-                        .region(Region.of(region))
-                        .credentialsProvider(StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(accessKey, secretKey)))
-                        .build();
-            } else {
-                s3Presigner = S3Presigner.builder()
-                        .region(Region.of(region))
-                        .build();
-            }
+            s3Presigner = S3Presigner.builder()
+                    .region(Region.of(region))
+                    .build();
         }
         return s3Presigner;
     }

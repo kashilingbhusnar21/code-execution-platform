@@ -3,8 +3,9 @@
 # or set the equivalent environment variables.
 
 # AWS S3
-aws.accessKey=YOUR_AWS_ACCESS_KEY
-aws.secretKey=YOUR_AWS_SECRET_KEY
+# AWS credentials should be set via environment variables:
+# AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+# The application will automatically use the AWS Default Credential Provider Chain
 aws.region=eu-north-1
 aws.bucketName=YOUR_BUCKET_NAME
 
