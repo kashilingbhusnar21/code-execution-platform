@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -33,7 +34,10 @@ public class ContainerManagerService {
 
     private static final Logger logger = LoggerFactory.getLogger(ContainerManagerService.class);
 
-    public static final Path HOST_TEMP_DIR = Paths.get("C:\\temp");
+    @Value("${worker.temp.dir:}")
+    private String configuredTempDir;
+
+    public static Path HOST_TEMP_DIR;
     private static final long COMMAND_TIMEOUT_SECONDS = 30;
     private static final long START_TIMEOUT_SECONDS = 180;
 
@@ -48,6 +52,14 @@ public class ContainerManagerService {
 
     @PostConstruct
     public void startAllContainers() {
+        // Initialize temp directory from config or system default
+        if (configuredTempDir != null && !configuredTempDir.trim().isEmpty()) {
+            HOST_TEMP_DIR = Paths.get(configuredTempDir);
+        } else {
+            HOST_TEMP_DIR = Paths.get(System.getProperty("java.io.tmpdir"), "code-worker");
+        }
+        logger.info("Using temp directory: {}", HOST_TEMP_DIR.toAbsolutePath());
+
         languageToImage.put("java", "eclipse-temurin:17-jdk");
         languageToImage.put("python", "python:3.10");
         languageToImage.put("cpp", "gcc:latest");
