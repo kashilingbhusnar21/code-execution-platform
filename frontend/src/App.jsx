@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import EditorPage from './pages/EditorPage';
+import ProblemListPage from './pages/ProblemListPage';
+import ProblemDetailPage from './pages/ProblemDetailPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
@@ -15,6 +17,14 @@ function App() {
         <Route
           path="/login"
           element={<LoginPage />}
+        />
+        <Route
+          path="/problems"
+          element={<ProblemListPage />}
+        />
+        <Route
+          path="/problems/:id"
+          element={<ProblemDetailPage />}
         />
         <Route
           path="/editor"

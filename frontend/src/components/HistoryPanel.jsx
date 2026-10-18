@@ -7,14 +7,20 @@ import React, {
 import { api } from '../services/api';
 
 const STATUS_META = {
+  ACCEPTED: { label: 'Accepted', tone: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300' },
   SUCCESS: { label: 'Success', tone: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300' },
+  WRONG_ANSWER: { label: 'Wrong Answer', tone: 'border-rose-500/25 bg-rose-500/10 text-rose-300' },
+  COMPILE_ERROR: { label: 'Compile Error', tone: 'border-rose-500/25 bg-rose-500/10 text-rose-300' },
   COMPILATION_ERROR: { label: 'Compilation Error', tone: 'border-rose-500/25 bg-rose-500/10 text-rose-300' },
   RUNTIME_ERROR: { label: 'Runtime Error', tone: 'border-rose-500/25 bg-rose-500/10 text-rose-300' },
+  TIME_LIMIT_EXCEEDED: { label: 'Time Limit Exceeded', tone: 'border-amber-500/25 bg-amber-500/10 text-amber-300' },
   TIMEOUT: { label: 'Timeout', tone: 'border-amber-500/25 bg-amber-500/10 text-amber-300' },
+  PENDING: { label: 'Pending', tone: 'border-sky-500/25 bg-sky-500/10 text-sky-300' },
+  RUNNING: { label: 'Running', tone: 'border-sky-500/25 bg-sky-500/10 text-sky-300' },
   ERROR: { label: 'Error', tone: 'border-rose-500/25 bg-rose-500/10 text-rose-300' },
 };
 
-const HistoryPanel = forwardRef(({ onLoadCode }, ref) => {
+const HistoryPanel = forwardRef(({ onLoadCode, problemId }, ref) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -25,7 +31,7 @@ const HistoryPanel = forwardRef(({ onLoadCode }, ref) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getHistory();
+      const data = await api.getHistory(problemId);
       setHistory(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load history');
@@ -48,7 +54,7 @@ const HistoryPanel = forwardRef(({ onLoadCode }, ref) => {
 
   useEffect(() => {
     loadHistory();
-  }, []);
+  }, [problemId]);
 
   const handleLoadCode = async (item) => {
     setLoadingId(item.id);
@@ -150,6 +156,11 @@ const HistoryPanel = forwardRef(({ onLoadCode }, ref) => {
                         <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${meta.tone}`}>
                           {meta.label}
                         </span>
+                        {item.totalCount != null && item.totalCount > 0 && (
+                          <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-300">
+                            {item.passedCount != null ? item.passedCount : 0}/{item.totalCount} passed
+                          </span>
+                        )}
                       </div>
 
                       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">

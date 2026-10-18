@@ -60,17 +60,31 @@ export const api = {
   },
 
   // Code execution endpoints (protected)
-  runCode: async (code, language, input) => {
-    const response = await axiosWithAuth.post(`${API_BASE_URL}/code/run`, {
+  runCode: async (code, language, input, problemId) => {
+    const payload = {
       code,
       language,
       input: input || '',
+    };
+    if (problemId) {
+      payload.problemId = problemId;
+    }
+    const response = await axiosWithAuth.post(`${API_BASE_URL}/code/run`, payload);
+    return response.data;
+  },
+
+  submitCode: async (code, language, problemId) => {
+    const response = await axiosWithAuth.post(`${API_BASE_URL}/code/submit`, {
+      code,
+      language,
+      problemId,
     });
     return response.data;
   },
 
-  getHistory: async () => {
-    const response = await axiosWithAuth.get(`${API_BASE_URL}/code/history`);
+  getHistory: async (problemId) => {
+    const url = problemId ? `${API_BASE_URL}/code/history?problemId=${problemId}` : `${API_BASE_URL}/code/history`;
+    const response = await axiosWithAuth.get(url);
     return response.data;
   },
 
@@ -81,6 +95,51 @@ export const api = {
 
   getSubmissionStatus: async (id) => {
     const response = await axiosWithAuth.get(`${API_BASE_URL}/code/status/${id}`);
+    return response.data;
+  },
+
+  // Problem endpoints
+  getAllProblems: async () => {
+    const response = await axios.get(`${API_BASE_URL}/problems`);
+    return response.data;
+  },
+
+  getProblemById: async (id) => {
+    const response = await axios.get(`${API_BASE_URL}/problems/${id}`);
+    return response.data;
+  },
+
+  getProblemsByDifficulty: async (difficulty) => {
+    const response = await axios.get(`${API_BASE_URL}/problems/difficulty/${difficulty}`);
+    return response.data;
+  },
+
+  getProblemsByTopic: async (topicName) => {
+    const response = await axios.get(`${API_BASE_URL}/problems/topic/${topicName}`);
+    return response.data;
+  },
+
+  searchProblems: async (keyword) => {
+    const response = await axios.get(`${API_BASE_URL}/problems/search`, {
+      params: { keyword }
+    });
+    return response.data;
+  },
+
+  filterProblems: async (difficulty, topicId) => {
+    const response = await axios.get(`${API_BASE_URL}/problems/filter`, {
+      params: { difficulty, topicId }
+    });
+    return response.data;
+  },
+
+  getAllTopics: async () => {
+    const response = await axios.get(`${API_BASE_URL}/problems/topics/all`);
+    return response.data;
+  },
+
+  getUserProgress: async () => {
+    const response = await axiosWithAuth.get(`${API_BASE_URL}/problems/progress`);
     return response.data;
   },
 };

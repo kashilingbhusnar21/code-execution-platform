@@ -1,8 +1,10 @@
 package com.codeplatform.code_executor.dto;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class CodeResultMessage implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private Long submissionId;
     private String output;
@@ -11,6 +13,9 @@ public class CodeResultMessage implements Serializable {
     private String status;
     private Long executionTimeMs;
     private String errorMessage;
+    private Integer passedCount;
+    private Integer totalCount;
+    private List<TestCaseResultItem> testCaseResults;
 
     public CodeResultMessage() {
     }
@@ -24,6 +29,21 @@ public class CodeResultMessage implements Serializable {
         this.status = status;
         this.executionTimeMs = executionTimeMs;
         this.errorMessage = errorMessage;
+    }
+
+    public CodeResultMessage(Long submissionId, String output, String stdout, String stderr,
+                            String status, Long executionTimeMs, String errorMessage,
+                            Integer passedCount, Integer totalCount, List<TestCaseResultItem> testCaseResults) {
+        this.submissionId = submissionId;
+        this.output = output;
+        this.stdout = stdout;
+        this.stderr = stderr;
+        this.status = status;
+        this.executionTimeMs = executionTimeMs;
+        this.errorMessage = errorMessage;
+        this.passedCount = passedCount;
+        this.totalCount = totalCount;
+        this.testCaseResults = testCaseResults;
     }
 
     public Long getSubmissionId() {
@@ -80,5 +100,29 @@ public class CodeResultMessage implements Serializable {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public Integer getPassedCount() {
+        return passedCount;
+    }
+
+    public void setPassedCount(Integer passedCount) {
+        this.passedCount = passedCount;
+    }
+
+    public Integer getTotalCount() {
+        return totalCount;
+    }
+
+    public void setTotalCount(Integer totalCount) {
+        this.totalCount = totalCount;
+    }
+
+    public List<TestCaseResultItem> getTestCaseResults() {
+        return testCaseResults;
+    }
+
+    public void setTestCaseResults(List<TestCaseResultItem> testCaseResults) {
+        this.testCaseResults = testCaseResults;
     }
 }

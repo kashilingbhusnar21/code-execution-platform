@@ -20,6 +20,10 @@ public interface CodeExecutor {
      */
     ExecutionResult execute(String code, String filePath, String input);
 
+    default ExecutionResult execute(String code, String filePath, String input, String problemTitle) {
+        return execute(code, filePath, input);
+    }
+
     /**
      * Language id used by the API and frontend (e.g. "java", "python", "cpp").
      * Must be unique across all executors. Case is ignored.

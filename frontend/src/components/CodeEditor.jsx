@@ -34,23 +34,44 @@ const CodeEditor = ({
   input,
   setInput,
   onRun,
+  onSubmit,
   isRunning,
+  isSubmitting = false,
   statusMeta,
   languageLabel,
+  onReset,
+  isProblemMode = false,
+  hideInput = false,
 }) => {
+  const [showInput, setShowInput] = React.useState(true);
+
+  React.useEffect(() => {
+    if (input) {
+      setShowInput(true);
+    }
+  }, [input]);
+
   const handleLanguageChange = (nextLanguage) => {
     setLanguage(nextLanguage);
     setCode(LANGUAGE_TEMPLATES[nextLanguage] || '');
   };
 
   const handleReset = () => {
-    setCode(LANGUAGE_TEMPLATES[language] || '');
+    if (onReset) {
+      onReset();
+    } else {
+      setCode(LANGUAGE_TEMPLATES[language] || '');
+    }
   };
 
   const monacoLanguage = MONACO_LANGUAGE_MAP[language] || 'java';
 
+  const containerClass = isProblemMode
+    ? 'flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/20 backdrop-blur'
+    : 'flex h-full max-h-[calc(100vh-7rem)] min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/20 backdrop-blur';
+
   return (
-    <div className="flex h-full max-h-[calc(100vh-7rem)] min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/20 backdrop-blur">
+    <div className={containerClass}>
       <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/70 px-4 py-2.5 sm:px-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -101,7 +122,7 @@ const CodeEditor = ({
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/70 px-4 py-2.5 sm:px-5">
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${!hideInput ? 'border-b' : ''} border-slate-800 bg-slate-900/70 px-4 py-2.5 sm:px-5`}>
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 font-medium text-slate-300">
             Monaco
@@ -127,7 +148,7 @@ const CodeEditor = ({
           <button
             type="button"
             onClick={onRun}
-            disabled={isRunning}
+            disabled={isRunning || isSubmitting}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/20 transition-all duration-200 hover:brightness-110 hover:shadow-sky-500/30 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isRunning ? (
@@ -148,33 +169,77 @@ const CodeEditor = ({
               </>
             )}
           </button>
+
+          {isProblemMode && onSubmit && (
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={isRunning || isSubmitting}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all duration-200 hover:brightness-110 hover:shadow-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Submitting
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Submit
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="flex shrink-0 max-h-40 min-h-0 flex-col border-t border-slate-800 bg-slate-950/90">
+      {!hideInput && (
+        <div className={`flex shrink-0 min-h-0 flex-col border-t border-slate-800 bg-slate-950/90 ${showInput ? 'max-h-40' : ''}`}>
         <div className="border-b border-slate-800 px-4 py-2.5 sm:px-5">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Input
-              </h3>
-              <p className="mt-1 text-xs text-slate-500">stdin</p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowInput(!showInput)}
+                className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-200 transition-colors"
+                title={showInput ? 'Collapse input' : 'Expand input'}
+              >
+                <span>Input</span>
+                <svg
+                  className={`h-3 w-3 text-slate-500 transition-transform duration-200 ${showInput ? 'rotate-180' : ''}`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <span className="text-xs text-slate-500">stdin</span>
             </div>
-            <span className="rounded-full border border-slate-800 bg-slate-900 px-2 py-1 text-[11px] text-slate-400">
-              {input ? `${input.length} chars` : 'Empty'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-slate-800 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-400">
+                {input ? `${input.length} chars` : 'Empty'}
+              </span>
+            </div>
           </div>
         </div>
 
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="min-h-24 flex-1 resize-none overflow-y-auto bg-slate-950 px-4 py-3 font-mono text-sm text-slate-100 outline-none placeholder:text-slate-600 sm:px-5"
-          placeholder={'Example:\n5\n10'}
-          spellCheck="false"
-          disabled={isRunning}
-        />
+        {showInput && (
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="min-h-24 flex-1 resize-none overflow-y-auto bg-slate-950 px-4 py-3 font-mono text-sm text-slate-100 outline-none placeholder:text-slate-600 sm:px-5"
+            placeholder={'Example:\n5\n10'}
+            spellCheck="false"
+            disabled={isRunning}
+          />
+        )}
       </div>
+      )}
     </div>
   );
 };

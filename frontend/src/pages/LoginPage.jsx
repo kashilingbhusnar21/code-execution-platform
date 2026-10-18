@@ -60,6 +60,9 @@ const LoginPage = ({ onAuthSuccess }) => {
               </div>
               <div>
                 <h1 className="text-[28px] font-semibold tracking-tight text-orange-400">CodeArena</h1>
+                <p className="text-xs font-medium text-cyan-400/90 tracking-wide">
+                  Built by Kashiling Bhusnar
+                </p>
               </div>
             </div>
 

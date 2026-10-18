@@ -30,6 +30,11 @@ public class JavaExecutor extends AbstractDockerExecutor {
 
     @Override
     public ExecutionResult execute(String code, String filePath, String input) {
+        return execute(code, filePath, input, null);
+    }
+
+    @Override
+    public ExecutionResult execute(String code, String filePath, String input, String problemTitle) {
         long startTime = System.currentTimeMillis();
         StringBuilder output = new StringBuilder();
         SubmissionStatus status = SubmissionStatus.SUCCESS;
@@ -39,34 +44,84 @@ public class JavaExecutor extends AbstractDockerExecutor {
         String packageName = null;
 
         try {
-            packageName = extractPackageName(sourceFile);
-            logger.info("Java work dir: {}, package: {}", workDir, packageName);
+            boolean isProblem = DsaProblemType.isProblemMode(problemTitle, code);
+            DsaProblemDef problemDef = isProblem ? DsaProblemType.from(problemTitle, code) : null;
 
-            if (packageName != null && !packageName.isEmpty()) {
-                sourceFile = moveFileToPackageStructure(workDir, sourceFile, packageName);
+            if (isProblem && problemDef == null) {
+                status = SubmissionStatus.ERROR;
+                output.append("Error: Unsupported problem type: '").append(problemTitle != null ? problemTitle : "unknown")
+                      .append("'. Automated harness is not configured for this problem.");
+                return new ExecutionResult(output.toString().trim(), status, System.currentTimeMillis() - startTime);
             }
 
-            // docker exec java-container javac ...
-            String compileCmd = buildCompileCommand(workDir, sourceFile);
-            CommandResult compileResult = runInDocker(workDir, compileCmd, null);
-
-            if (compileResult.isTimedOut()) {
-                status = SubmissionStatus.TIMEOUT;
-                output.append(compileResult.getOutput());
-            } else if (!compileResult.isSuccess()) {
-                status = SubmissionStatus.COMPILATION_ERROR;
-                output.append("Compilation Error:\n").append(compileResult.getOutput());
-            } else {
-                // docker exec java-container java -cp . Main
-                String runCmd = buildRunCommand(packageName);
-                CommandResult runResult = runInDocker(workDir, runCmd, input);
-
-                if (runResult.isTimedOut()) {
-                    status = SubmissionStatus.TIMEOUT;
-                } else if (!runResult.isSuccess()) {
-                    status = SubmissionStatus.RUNTIME_ERROR;
+            if (problemDef != null) {
+                logger.info("Java DSA problem mode detected: {}", problemDef);
+                // 1. Write user solution to Solution.java
+                Path solutionFile = workDir.resolve("Solution.java");
+                String solutionContent = code;
+                if (!solutionContent.contains("import java.util")) {
+                    solutionContent = "import java.util.*;\n" + solutionContent;
                 }
-                output.append(runResult.getOutput());
+                Files.writeString(solutionFile, solutionContent);
+
+                // 2. Write harness to Main.java
+                Path mainFile = workDir.resolve("Main.java");
+                String harnessCode = DsaHarnessGenerator.getJavaHarness(problemDef);
+                Files.writeString(mainFile, harnessCode);
+
+                // 3. Compile both Solution.java and Main.java
+                String compileCmd = "javac -d . Solution.java Main.java";
+                CommandResult compileResult = runInDocker(workDir, compileCmd, null);
+
+                if (compileResult.isTimedOut()) {
+                    status = SubmissionStatus.TIMEOUT;
+                    output.append(compileResult.getOutput());
+                } else if (!compileResult.isSuccess()) {
+                    status = SubmissionStatus.COMPILATION_ERROR;
+                    output.append("Compilation Error:\n").append(compileResult.getOutput());
+                } else {
+                    // 4. Run harness
+                    String runCmd = "java -cp . Main";
+                    CommandResult runResult = runInDocker(workDir, runCmd, input);
+
+                    if (runResult.isTimedOut()) {
+                        status = SubmissionStatus.TIMEOUT;
+                    } else if (!runResult.isSuccess()) {
+                        status = SubmissionStatus.RUNTIME_ERROR;
+                    }
+                    output.append(runResult.getOutput());
+                }
+            } else {
+                // Standalone execution mode
+                packageName = extractPackageName(sourceFile);
+                logger.info("Java standalone work dir: {}, package: {}", workDir, packageName);
+
+                if (packageName != null && !packageName.isEmpty()) {
+                    sourceFile = moveFileToPackageStructure(workDir, sourceFile, packageName);
+                }
+
+                // docker exec java-container javac ...
+                String compileCmd = buildCompileCommand(workDir, sourceFile);
+                CommandResult compileResult = runInDocker(workDir, compileCmd, null);
+
+                if (compileResult.isTimedOut()) {
+                    status = SubmissionStatus.TIMEOUT;
+                    output.append(compileResult.getOutput());
+                } else if (!compileResult.isSuccess()) {
+                    status = SubmissionStatus.COMPILATION_ERROR;
+                    output.append("Compilation Error:\n").append(compileResult.getOutput());
+                } else {
+                    // docker exec java-container java -cp . Main
+                    String runCmd = buildRunCommand(packageName);
+                    CommandResult runResult = runInDocker(workDir, runCmd, input);
+
+                    if (runResult.isTimedOut()) {
+                        status = SubmissionStatus.TIMEOUT;
+                    } else if (!runResult.isSuccess()) {
+                        status = SubmissionStatus.RUNTIME_ERROR;
+                    }
+                    output.append(runResult.getOutput());
+                }
             }
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) {

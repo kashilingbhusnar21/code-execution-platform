@@ -26,6 +26,11 @@ public class CppExecutor extends AbstractDockerExecutor {
 
     @Override
     public ExecutionResult execute(String code, String filePath, String input) {
+        return execute(code, filePath, input, null);
+    }
+
+    @Override
+    public ExecutionResult execute(String code, String filePath, String input, String problemTitle) {
         long startTime = System.currentTimeMillis();
         StringBuilder output = new StringBuilder();
         SubmissionStatus status = SubmissionStatus.SUCCESS;
@@ -34,6 +39,55 @@ public class CppExecutor extends AbstractDockerExecutor {
         Path workDir = sourceFile.getParent();
 
         try {
+            boolean isProblem = DsaProblemType.isProblemMode(problemTitle, code);
+            DsaProblemDef problemDef = isProblem ? DsaProblemType.from(problemTitle, code) : null;
+
+            if (isProblem && problemDef == null) {
+                status = SubmissionStatus.ERROR;
+                output.append("Error: Unsupported problem type: '").append(problemTitle != null ? problemTitle : "unknown")
+                      .append("'. Automated harness is not configured for this problem.");
+                return new ExecutionResult(output.toString().trim(), status, System.currentTimeMillis() - startTime);
+            }
+
+            if (problemDef != null) {
+                logger.info("C++ DSA problem mode detected: {}", problemDef);
+                // 1. Write user solution to solution.h with common definitions
+                Path solutionHeader = workDir.resolve("solution.h");
+                String solutionContent = "#pragma once\n"
+                        + "#include <iostream>\n"
+                        + "#include <vector>\n"
+                        + "#include <string>\n"
+                        + "#include <algorithm>\n"
+                        + "#include <stack>\n"
+                        + "#include <unordered_map>\n"
+                        + "#include <map>\n"
+                        + "#include <set>\n"
+                        + "#include <climits>\n"
+                        + "using namespace std;\n\n"
+                        + "struct ListNode {\n"
+                        + "    int val;\n"
+                        + "    ListNode *next;\n"
+                        + "    ListNode() : val(0), next(nullptr) {}\n"
+                        + "    ListNode(int x) : val(x), next(nullptr) {}\n"
+                        + "    ListNode(int x, ListNode *next) : val(x), next(next) {}\n"
+                        + "};\n\n"
+                        + "struct TreeNode {\n"
+                        + "    int val;\n"
+                        + "    TreeNode *left;\n"
+                        + "    TreeNode *right;\n"
+                        + "    TreeNode() : val(0), left(nullptr), right(nullptr) {}\n"
+                        + "    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n"
+                        + "    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}\n"
+                        + "};\n\n"
+                        + code;
+                java.nio.file.Files.writeString(solutionHeader, solutionContent);
+
+                // 2. Write harness to main.cpp
+                Path mainFile = workDir.resolve("main.cpp");
+                String harnessCode = DsaHarnessGenerator.getCppHarness(problemDef);
+                java.nio.file.Files.writeString(mainFile, harnessCode);
+            }
+
             logger.info("C++ work dir: {}", workDir);
 
             // docker exec cpp-container g++ main.cpp -o main

@@ -1,9 +1,13 @@
 import React from 'react';
 
 const statusStyles = {
+  ACCEPTED: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
   SUCCESS: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+  WRONG_ANSWER: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+  COMPILE_ERROR: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
   COMPILATION_ERROR: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
   RUNTIME_ERROR: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+  TIME_LIMIT_EXCEEDED: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
   TIMEOUT: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
   ERROR: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
 };
