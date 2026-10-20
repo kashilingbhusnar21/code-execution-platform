@@ -44,4 +44,86 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: #475569;
   }
+
+  /* ── Scroll-reveal animations ───────────────────────── */
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes fade-in-scale {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  @keyframes float-particle {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+    25%      { transform: translateY(-20px) translateX(8px); opacity: 0.6; }
+    50%      { transform: translateY(-10px) translateX(-10px); opacity: 0.4; }
+    75%      { transform: translateY(-28px) translateX(4px); opacity: 0.7; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 0.8; }
+  }
+  @keyframes accordion-slide {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes hero-gradient-shift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes count-up-pop {
+    0%   { transform: scale(0.6); opacity: 0; }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.55s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .animate-fade-in-scale {
+    animation: fade-in-scale 0.5s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.06) 40%, rgba(99,102,241,0.06) 60%, transparent 100%);
+    background-size: 800px 100%;
+    animation: shimmer 2s linear infinite;
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  .animate-accordion-slide {
+    animation: accordion-slide 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .animate-hero-gradient {
+    background-size: 200% 200%;
+    animation: hero-gradient-shift 6s ease-in-out infinite;
+  }
+  .animate-count-pop {
+    animation: count-up-pop 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+
+  /* Card border-glow on hover */
+  .card-glow {
+    position: relative;
+  }
+  .card-glow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: conic-gradient(from 180deg, transparent 60%, rgba(56,189,248,0.12), rgba(99,102,241,0.12), transparent 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .card-glow:hover::before {
+    opacity: 1;
+  }
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import Navbar from '../components/Navbar';
 
 const ProblemDetailPage = () => {
   const { id } = useParams();
@@ -92,60 +93,7 @@ const ProblemDetailPage = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.08),transparent_25%),linear-gradient(to_bottom,rgba(15,23,42,0.95),rgba(2,6,23,1))] pointer-events-none" />
 
       {/* Top Header */}
-      <header className="relative z-30 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link to="/problems" className="flex items-center gap-3 group">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-500/20 bg-sky-500/10 text-sky-300 shadow-lg shadow-sky-500/10">
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M16 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M8 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M14 4L10 20" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold tracking-tight text-slate-50">CodeArena</h1>
-                <p className="truncate text-xs font-medium text-cyan-400/90 tracking-wide">
-                  Built by Kashiling Bhusnar
-                </p>
-              </div>
-            </Link>
-
-            <nav className="flex items-center gap-1.5 border-l border-slate-800 pl-3 ml-2">
-              <Link
-                to="/problems"
-                className="flex items-center gap-1.5 rounded-xl border border-cyan-400/70 bg-cyan-500/25 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400/30"
-              >
-                <svg
-                  className="h-4 w-4 text-cyan-300"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="16 18 22 12 16 6" />
-                  <polyline points="8 6 2 12 8 18" />
-                </svg>
-                <span>DSA Problems</span>
-              </Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSolve}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-950 shadow-md shadow-cyan-500/20 hover:brightness-110 transition-all"
-            >
-              <span>Solve Problem</span>
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

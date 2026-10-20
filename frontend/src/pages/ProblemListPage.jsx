@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import Navbar from '../components/Navbar';
 import DsaProgressCard from '../components/DsaProgressCard';
+import CareerRoadmapBanner from '../components/CareerRoadmapBanner';
 
 const ProblemListPage = () => {
   const [problems, setProblems] = useState([]);
@@ -126,76 +128,34 @@ const ProblemListPage = () => {
     <div className="min-h-screen bg-[#0b1120] text-slate-100">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.08),transparent_25%),linear-gradient(to_bottom,rgba(15,23,42,0.95),rgba(2,6,23,1))] pointer-events-none" />
 
-      {/* Top Header */}
-      <header className="relative z-30 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-500/20 bg-sky-500/10 text-sky-300 shadow-lg shadow-sky-500/10">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M16 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M14 4L10 20" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold tracking-tight text-slate-50">
-                  CodeArena
-                </h1>
-                <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-300">
-                  DSA Library
-                </span>
-              </div>
-              <p className="truncate text-xs font-medium text-cyan-400/90 tracking-wide">
-                Built by Kashiling Bhusnar
-              </p>
-            </div>
-
-            {/* Navigation pill */}
-            <nav className="flex items-center gap-1.5 border-l border-slate-800 pl-3 ml-2">
-              <span className="flex items-center gap-1.5 rounded-xl border border-cyan-400/70 bg-cyan-500/25 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400/30">
-                <svg
-                  className="h-4 w-4 text-cyan-300"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="16 18 22 12 16 6" />
-                  <polyline points="8 6 2 12 8 18" />
-                </svg>
-                <span>DSA Problems</span>
-              </span>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              to="/editor"
-              className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-cyan-200 shadow-sm hover:border-cyan-400/50 hover:bg-cyan-500/20 transition-all"
-            >
-              <svg className="h-4 w-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M14 4L10 20" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span>Open Code Editor</span>
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Navigation Bar */}
+      <Navbar />
 
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Problem Library</h2>
-          <p className="mt-0.5 text-xs font-medium text-cyan-400/90 tracking-wide">
-            Built by Kashiling Bhusnar
-          </p>
-          <p className="mt-1 text-sm text-slate-400">Practice curated DSA problems with live multi-language test case evaluation</p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Problem Library</h2>
+            <p className="mt-0.5 text-xs font-medium text-cyan-400/90 tracking-wide">
+              Built by Kashiling Bhusnar
+            </p>
+            <p className="mt-1 text-sm text-slate-400">Practice curated DSA problems with live multi-language test case evaluation</p>
+          </div>
+          <Link
+            to="/editor"
+            className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-xs sm:text-sm font-medium text-cyan-200 shadow-sm hover:border-cyan-400/50 hover:bg-cyan-500/20 transition-all"
+          >
+            <svg className="h-4 w-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M14 4L10 20" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Open Code Editor</span>
+          </Link>
         </div>
+
+        {/* Career Roadmaps Direct Access Banner */}
+        <CareerRoadmapBanner />
 
         {/* LeetCode-style DSA Solving Progress Card */}
         {isAuth && userProgress && (

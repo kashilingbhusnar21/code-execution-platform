@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 
 const LoginPage = ({ onAuthSuccess }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -11,11 +12,14 @@ const LoginPage = ({ onAuthSuccess }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // If redirected from a protected page, navigate back there after login, otherwise go to /learning
+  const redirectTarget = location.state?.from?.pathname || '/learning';
+
   useEffect(() => {
     if (api.isAuthenticated()) {
-      navigate('/editor', { replace: true });
+      navigate(redirectTarget, { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, redirectTarget]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +40,7 @@ const LoginPage = ({ onAuthSuccess }) => {
       if (typeof onAuthSuccess === 'function') {
         onAuthSuccess();
       }
-      navigate('/editor', { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       setError(err.response?.data || 'Authentication failed');
     } finally {

@@ -142,4 +142,33 @@ export const api = {
     const response = await axiosWithAuth.get(`${API_BASE_URL}/problems/progress`);
     return response.data;
   },
+
+  // Learning Platform Endpoints
+  getLearningTracks: async () => {
+    const response = await axiosWithAuth.get(`${API_BASE_URL}/learning/tracks`);
+    return response.data;
+  },
+
+  getTrackRoadmap: async (trackSlug) => {
+    const response = await axiosWithAuth.get(`${API_BASE_URL}/learning/tracks/${trackSlug}`);
+    return response.data;
+  },
+
+  getTopicDetails: async (topicSlug) => {
+    const response = await axiosWithAuth.get(`${API_BASE_URL}/learning/topics/${topicSlug}`);
+    return response.data;
+  },
+
+  getUserTrackProgress: async (trackSlug) => {
+    const response = await axiosWithAuth.get(`${API_BASE_URL}/learning/progress/${trackSlug}`);
+    return response.data;
+  },
+
+  updateTopicProgress: async (topicSlug, status = 'COMPLETED', quizScore = null) => {
+    const response = await axiosWithAuth.post(`${API_BASE_URL}/learning/topics/${topicSlug}/progress`, {
+      status,
+      quizScore,
+    });
+    return response.data;
+  },
 };
